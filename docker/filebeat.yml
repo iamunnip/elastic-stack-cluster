@@ -1,0 +1,45 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      templates:
+        - condition:
+            regexp.docker.container.name: "^.*"
+          config:
+            - type: container
+              paths:
+                - /var/lib/docker/containers/${data.docker.container.id}/*.log
+
+processors:
+  - add_cloud_metadata: ~
+  - add_host_metadata: ~
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+
+output.logstash:
+  hosts: ["ls01:5044"]
+  ssl.enabled: true
+  ssl.verification_mode: certificate
+  ssl.certificate_authorities: /usr/share/filebeat/config/certs/ca/ca.crt
+  ssl.certificate: /usr/share/filebeat/config/certs/elastic/elastic.crt
+  ssl.key: /usr/share/filebeat/config/certs/elastic/elastic.key
+
+# output.elasticsearch:
+#   hosts: ["https://es01:9200"]
+#   protocol: https
+#   ssl.enabled: true
+#   ssl.verification_mode: certificate
+#   ssl.certificate_authorities: /usr/share/filebeat/config/certs/ca/ca.crt
+#   ssl.certificate: /usr/share/filebeat/config/certs/elastic/elastic.crt
+#   ssl.key: /usr/share/filebeat/config/certs/elastic/elastic.key
+#   username: elastic
+#   password: elastic
+
+# setup.dashboards:
+#   enabled: true
+
+# setup.kibana:
+#   host: https://kib01:5601
+#   ssl.enabled: true
+#   ssl.certificate_authorities: /usr/share/filebeat/config/certs/ca/ca.crt
+#   ssl.certificate: /usr/share/filebeat/config/certs/elastic/elastic.crt
+#   ssl.key: /usr/share/filebeat/config/certs/elastic/elastic.key

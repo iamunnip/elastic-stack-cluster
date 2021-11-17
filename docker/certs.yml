@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+
+  certs:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: certs
+    user: "0"
+    command: >
+              bash -c '
+                if [[ ! -f bundle.zip ]]; then
+                  bin/elasticsearch-certutil cert --silent --pem --in config/instances.yml -out config/bundle.zip;
+                  unzip -o config/bundle.zip -d config/certs;
+                fi;
+                openssl pkcs8 -in config/certs/elastic/elastic.key -topk8 -nocrypt -out config/certs/elastic/elastic.pkcs8.key
+                chown -R 1000:0 config/certs'
+    volumes:
+      - certs:/usr/share/elasticsearch/config/certs
+      - ./instances.yml:/usr/share/elasticsearch/config/instances.yml
+
+volumes:
+  certs:

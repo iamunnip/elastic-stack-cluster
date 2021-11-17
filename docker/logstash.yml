@@ -1,0 +1,10 @@
+node.name: ls01
+http.host: 0.0.0.0
+xpack.monitoring.enabled: true
+xpack.monitoring.collection.pipeline.details.enabled: true
+xpack.monitoring.collection.interval: 10s
+xpack.monitoring.elasticsearch.username: elastic
+xpack.monitoring.elasticsearch.password: elastic
+xpack.monitoring.elasticsearch.hosts: ["https://es01:9200"]
+xpack.monitoring.elasticsearch.ssl.verification_mode: certificate
+xpack.monitoring.elasticsearch.ssl.certificate_authority: /usr/share/logstash/config/certs/ca/ca.crt

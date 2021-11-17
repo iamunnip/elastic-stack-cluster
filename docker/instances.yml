@@ -1,0 +1,13 @@
+instances:
+  - name: elastic
+    dns:
+      - es01
+      - es02
+      - es03
+      - es04
+      - kib01
+      - ls01
+      - eb01
+      - localhost
+    ip:
+      - 127.0.0.1

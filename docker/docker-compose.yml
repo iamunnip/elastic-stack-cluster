@@ -1,0 +1,186 @@
+version: "3.9"
+
+services:
+
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: es01
+    environment:
+      node.name: "es01"
+      node.roles: "master,ingest"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      ELASTIC_PASSWORD: "elastic"
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - certs:/usr/share/elasticsearch/config/certs
+      - es01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elastic
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:elastic -s -k https://localhost:9200/_cat/health?h=status | grep -q green"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: es02
+    environment:
+      node.name: "es02"
+      node.roles: "data"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      ELASTIC_PASSWORD: "elastic"
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - certs:/usr/share/elasticsearch/config/certs
+      - es02:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    depends_on:
+      - es01
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:elastic -s -k https://localhost:9200/_cat/health?h=status | grep -q green"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: es03
+    environment:
+      node.name: "es03"
+      node.roles: "data"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      ELASTIC_PASSWORD: "elastic"
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - certs:/usr/share/elasticsearch/config/certs
+      - es03:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    depends_on:
+      - es01
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:elastic -s -k https://localhost:9200/_cat/health?h=status | grep -q green"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  es04:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
+    container_name: es04
+    environment:
+      node.name: "es04"
+      node.roles: "data"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      ELASTIC_PASSWORD: "elastic"
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - certs:/usr/share/elasticsearch/config/certs
+      - es04:/usr/share/elasticsearch/data
+    networks:
+      - elastic
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    depends_on:
+      - es01
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:elastic -s -k https://localhost:9200/_cat/health?h=status | grep -q green"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  kib01:
+    image: docker.elastic.co/kibana/kibana:7.15.2
+    container_name: kib01
+    volumes:
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml
+      - certs:/usr/share/kibana/config/certs
+    ports:
+      - 5601:5601
+    networks:
+      - elastic
+    depends_on:
+      es01:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -u elastic:elastic -s -k https://localhost:5601/api/status"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  ls01:
+    image: docker.elastic.co/logstash/logstash:7.15.2
+    container_name: ls01
+    volumes:
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logstash.conf/:/usr/share/logstash/pipeline/logstash.conf
+      - certs:/usr/share/logstash/config/certs
+    networks:
+      - elastic
+    depends_on:
+      es01:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9600/_node/stats/jvm?pretty | grep -q green"]
+      interval: 10s
+      timeout: 30s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  eb01:
+    image: docker.elastic.co/beats/filebeat:7.15.2
+    container_name: eb01
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - certs:/usr/share/filebeat/config/certs
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - elastic
+    depends_on:
+      es01:
+        condition: service_healthy
+      kib01:
+        condition: service_healthy
+      ls01:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  certs:
+  es01:
+  es02:
+  es03:
+  es04:
+
+networks:
+  elastic:
